@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 // 二叉树节点
 typedef int val_type;
@@ -166,7 +167,213 @@ void order_test()
     printf("\n");
 }
 
+// 单值二叉树 v1
+bool is_unival_tree_v1(Node *root)
+{
+    if (root == NULL)
+        return true;
+
+    if (root->left_ && root->left_->data_ != root->data_)
+        return false;
+
+    if (root->right_ && root->right_->data_ != root->data_)
+        return false;
+
+    return is_unival_tree_v1(root->left_) && is_unival_tree_v1(root->right_);
+}
+
+// 以前序遍历的方式比较树中每个节点的值是否与给定值相等
+bool preorder_compare(Node *root, int val)
+{
+    if (root == NULL)
+        return true;
+
+    if (root->data_ != val)
+        return false;
+
+    return preorder_compare(root->left_, val) &&
+           preorder_compare(root->right_, val);
+}
+
+// 单值二叉树 v2
+bool is_unival_tree_v2(Node *root)
+{
+    if (root == NULL)
+        return true;
+
+    // 使用preorder_compare函数检查树中所有节点的值是否与根节点的值相等
+    return preorder_compare(root, root->data_);
+}
+
+// 相同的树
+bool is_same_tree(Node *root1, Node *root2)
+{
+    // 如果两个树都为空，则它们相同
+    if (root1 == NULL && root2 == NULL)
+        return true;
+
+    // 如果其中一个树为空而另一个不为空，则它们不相同
+    if (root1 == NULL || root2 == NULL)
+        return false;
+
+    // 如果两个树的当前节点值不相同，则它们不相同
+    if (root1->data_ != root2->data_)
+        return false;
+
+    // 递归比较两颗树的左子树和右子树是否相同
+    return is_same_tree(root1->left_, root2->left_) &&
+           is_same_tree(root1->right_, root2->right_);
+}
+
+// 辅助函数来检查两个树是否为镜像对称
+bool isMirror(Node *left, Node *right)
+{
+    if (left == NULL && right == NULL)
+        return true;
+    if (left == NULL || right == NULL || left->data_ != right->data_)
+        return false;
+    return isMirror(left->left_, right->right_) && isMirror(left->right_, right->left_);
+}
+
+// 轴对称二叉树
+bool is_symmetric_tree(Node *root)
+{
+    if (root == NULL)
+        return true;
+    return isMirror(root->left_, root->right_);
+}
+
+// 另一棵树的子树
+bool is_subtree(Node *root, Node *subRoot)
+{
+    if (root == NULL)
+        return false;
+    if (is_same_tree(root, subRoot))
+        return true;
+    return is_subtree(root->left_, subRoot) || is_subtree(root->right_, subRoot);
+}
+
+// 销毁二叉树
+void destroy_tree(Node *root)
+{
+    if (root == NULL)
+        return;
+
+    destroy_tree(root->left_);
+    destroy_tree(root->right_);
+    free(root);
+}
+
+// 二叉树层序遍历
+void level_order(Node *root)
+{
+    if (root == NULL) // 如果根节点为空，则直接返回
+        return;
+
+    // 在堆上动态分配队列空间
+    Node **queue = (Node **)malloc(1000 * sizeof(Node *));
+    if (queue == NULL) // 检查内存分配是否成功
+        return;
+
+    int front = 0, rear = 0; // 初始化队列的前端和后端指针
+    queue[rear++] = root;    // 将根节点加入队列
+
+    // 当队列不为空时循环
+    while (front < rear)
+    {
+        Node *node = queue[front++]; // 从队列中取出一个节点
+        printf("%d ", node->data_);  // 打印节点数据
+
+        // 如果左子节点存在，将其加入队列
+        if (node->left_)
+            queue[rear++] = node->left_;
+        // 如果右子节点存在，将其加入队列
+        if (node->right_)
+            queue[rear++] = node->right_;
+    }
+
+    free(queue); // 使用完毕后释放队列占用的内存
+}
+
+// 测试层序遍历
+void level_order_test()
+{
+    Node *root = buildTree();
+    level_order(root);
+}
+
+// 是否为完全二叉树
+bool is_complete_tree(Node *root)
+{
+    if (root == NULL)
+        return true;
+
+    Node **queue = (Node **)malloc(1000 * sizeof(Node *));
+    if (queue == NULL)
+        return false;
+
+    int front = 0, rear = 0;
+    // 初始化队列并将根节点加入队列
+    queue[rear++] = root;
+
+    // 使用层次遍历来检查树的完整性
+    while (front < rear)
+    {
+        Node *node = queue[front++]; // 从队列中取出一个节点
+
+        if (node == NULL) // 如果节点为空，则终止循环
+            break;
+
+        // 将当前节点的左右子节点加入队列，即使它们是NULL
+        queue[rear++] = node->left_;
+        queue[rear++] = node->right_;
+    }
+
+    // 跳过所有的NULL节点，这些节点代表了树的最后一层的空位置
+    while (front < rear && queue[front] == NULL)
+        front++;
+
+    // 检查在遇到第一个NULL节点之后是否还有非NULL节点，如果有，则不是完全二叉树
+    while (front < rear)
+    {
+        if (queue[front++] != NULL) // 如果找到非NULL节点，则树不是完全二叉树
+        {
+            free(queue);  // 释放队列内存
+            return false; // 返回false，表示这不是一个完全二叉树
+        }
+    }
+
+    // 如果所有检查都通过，则释放队列内存并返回true，表示这是一个完全二叉树
+    free(queue);
+    return true;
+}
+
+// 是否为满二叉树
+bool is_full_tree(Node *root)
+{
+    if (root == NULL)
+        return true;
+
+    if (root->left_ == NULL && root->right_ == NULL)
+        return true;
+
+    if (root->left_ && root->right_)
+        return is_full_tree(root->left_) && is_full_tree(root->right_);
+
+    return false;
+}
+
 int main()
 {
+    Node *root = buildTree();
+
+    printf("tree_size: %zu\n", tree_size(root));
+    printf("leaf_size: %zu\n", leaf_size(root));
+    printf("level_size: %zu\n", level_size(root, 3));
+    printf("tree_find: %p\n", tree_find(root, 5));
+    printf("tree_depth: %zu\n", tree_depth(root));
+
+    level_order_test();
+
     return 0;
 }
