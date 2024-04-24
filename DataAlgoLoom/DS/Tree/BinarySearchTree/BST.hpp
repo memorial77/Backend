@@ -20,6 +20,11 @@ public:
     // 默认构造函数
     Tree() : root_(nullptr) {}
 
+    ~Tree()
+    {
+        deleteTree(root_);
+    }
+
     // 插入节点
     bool insert(const T &val)
     {
@@ -124,7 +129,7 @@ public:
         delete_recursive_helper(root_, val);
     }
 
-        // 查找非递归版本
+    // 查找非递归版本
     Node<T> *find(T val)
     {
         Node<T> *cur = root_;
@@ -204,18 +209,18 @@ private:
             return false;
     }
 
-    bool delete_recursiv_helper(Node<T> *&root, const T &val)
+    bool delete_recursive_helper(Node<T> *&root, const T &val)
     {
         if (root == nullptr)
             return false;
 
         if (val < root->data_)
         {
-            return delete_recursiv_helper(root->left_, val);
+            return delete_recursive_helper(root->left_, val);
         }
         else if (val > root->data_)
         {
-            return delete_recursiv_helper(root->right_, val);
+            return delete_recursive_helper(root->right_, val);
         }
         else
         {
@@ -250,5 +255,15 @@ private:
             return root;
         else
             return findMin(root->left_);
+    }
+
+    void deleteTree(Node<T> *node)
+    {
+        if (node != nullptr)
+        {
+            deleteTree(node->left_);
+            deleteTree(node->right_);
+            delete node;
+        }
     }
 };
