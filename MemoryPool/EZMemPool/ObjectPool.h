@@ -1,7 +1,6 @@
 #pragma once
 
-#include <sys/mman.h>
-#include <iostream>
+#include "Common.h"
 
 template <class T>
 class ObjectPool
@@ -63,7 +62,7 @@ public:
         }
         else
         {
-            // 不是首次则进行头插提高效率
+            
             *(void **)obj = free_list_;
             free_list_ = (void *)obj;
         }
