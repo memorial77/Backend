@@ -2,30 +2,29 @@
 #include <stdlib.h>
 #include <memory>
 
-// Usage for udp_server
+// udp_server的使用说明
 static void Usage(const std::string &proc)
 {
-    std::cout << "\t\t\nUsage:\n\t" << proc << "server_ip server_port\n"
+    std::cout << "\t\t\n使用方法:\n\t" << proc << " <端口号>\n"
               << std::endl;
 }
 
-// ./udp_server ip port
+// 使用方式 ./udp_server ip port
 int main(int argc, char *argv[])
 {
-    if (argc != 3)
+    if (argc != 2)
     {
         Usage(argv[0]);
-        exit(1);
+        exit(1); // 如果参数不正确则显示使用方法后退出
     }
 
-    std::string server_ip = argv[1];      // IP address
-    uint16_t server_port = atoi(argv[2]); // Port number
+    uint16_t server_port = atoi(argv[1]); // 服务端口号
 
-    // Create a UdpServer object
-    std::unique_ptr<UdpServer> server(new UdpServer(server_port, server_ip));
+    // 创建UdpServer对象
+    std::unique_ptr<UdpServer> server(new UdpServer(server_port));
 
-    server->init(); // Initialize the server
-    server->start(); // Start the server
+    server->init(); // 初始化服务器
+    server->start(); // 启动服务器
     
     return 0;
 }

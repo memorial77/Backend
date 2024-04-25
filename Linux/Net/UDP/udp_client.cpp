@@ -7,24 +7,31 @@
 #include <memory>
 #include "udp_client.hpp"
 
+// udp_server的使用说明
+static void Usage(const std::string &proc)
+{
+    std::cout << "\t\t\n使用方法:\n\t" << proc << " <服务器IP> <服务器端口>\n"
+              << std::endl;
+}
+
 int main(int argc, char *argv[])
 {
-    // Check the number of arguments
+    // 检查参数数量
     if (argc != 3)
     {
-        std::cerr << "Usage: " << argv[0] << " <ServerIP> <ServerPort>\n";
+        Usage(argv[0]);
         return 1;
     }
 
-    // Get the server IP and port
+    // 获取服务器IP和端口
     std::string server_ip = argv[1];
     int server_port = std::stoi(argv[2]);
 
-    // Create a UdpClient object
+    // 创建UdpClient对象
     std::unique_ptr<UdpClient> client(new UdpClient(server_ip, server_port));
 
-    client->init();  // Initialize the client
-    client->start(); // Start the client
+    client->init();  // 初始化客户端
+    client->start(); // 启动客户端
 
     return 0;
 }

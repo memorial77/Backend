@@ -10,74 +10,71 @@
 class UdpClient
 {
 private:
-    std::string server_ip_; // Server IP
-    uint16_t server_port_;  // Server port
-    int sockfd;             // Socket file descriptor
-    struct sockaddr_in server_addr;
+    std::string server_ip_;         // 服务器 IP
+    uint16_t server_port_;          // 服务器端口
+    int sockfd;                     // 套接字文件描述符
+    struct sockaddr_in server_addr; // 服务器地址结构
 
 public:
     UdpClient(const std::string &ip, uint16_t port)
         : server_ip_(ip), server_port_(port), sockfd(-1)
     {
-        // std::cout << "UdpClient constructor" << std::endl;
+        // 构造函数
     }
 
     ~UdpClient()
     {
-        // std::cout << "UdpClient destructor" << std::endl;
-        close(sockfd);
+        // 析构函数
+        close(sockfd); // 关闭套接字
     }
 
     void init()
     {
-        // Create a socket
+        // 创建套接字
         sockfd = socket(AF_INET, SOCK_DGRAM, 0);
         if (sockfd < 0)
         {
-            std::cerr << "Error creating socket\n";
+            std::cerr << "创建套接字错误\n";
             exit(1);
         }
 
-        // Set the server address
-        bzero(&server_addr, sizeof(server_addr)); // Clear the server address
-        server_addr.sin_family = AF_INET;
-        server_addr.sin_port = htons(server_port_);
-        server_addr.sin_addr.s_addr = inet_addr(server_ip_.c_str());
+        // 设置服务器地址
+        bzero(&server_addr, sizeof(server_addr));                    // 清空服务器地址结构
+        server_addr.sin_family = AF_INET;                            // 使用IPv4地址
+        server_addr.sin_port = htons(server_port_);                  // 设置端口号
+        server_addr.sin_addr.s_addr = inet_addr(server_ip_.c_str()); // 设置IP地址
     }
 
     void start()
     {
-        // Send data to the server
+        // 向服务器发送数据
         std::string message;
         while (true)
         {
-            std::cout << "Enter message to send (or 'exit' to quit): ";
-            std::getline(std::cin, message); // Get the message from the user
+            std::cout << "输入要发送的消息（输入 'exit' 退出）: ";
+            std::getline(std::cin, message); // 从用户获取消息
             if (message == "exit")
                 break;
 
             if (sendto(sockfd, message.c_str(), message.length(), 0,
                        (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
             {
-                // Error sending message
-                std::cerr << "Error sending message\n";
+                // 发送消息错误
+                std::cerr << "发送消息错误\n";
                 break;
             }
 
-            // Receive data from the server
+            // 从服务器接收数据
             char buf[1024];
-            bzero(buf, sizeof(buf));
+            bzero(buf, sizeof(buf)); // 清空缓冲区
             if (recvfrom(sockfd, buf, sizeof(buf), 0, NULL, NULL) < 0)
             {
-                // Error receiving data
-                std::cerr << "Error receiving data\n";
+                // 接收数据错误
+                std::cerr << "接收数据错误\n";
                 break;
             }
-            // Print the received data
-            // std::cout << "Received data: " << buf << std::endl;
-            std::cout << buf << std::endl;
-
+            // 打印接收到的数据
+            std::cout << buf;
         }
     }
-
 };
