@@ -79,8 +79,8 @@ private:
     // 启动接收线程
     void start_receiving()
     {
-        std::thread receiveThread(&UdpClient::receive_message, this);
-        receiveThread.detach(); // 分离线程
+        std::thread receive_thread(&UdpClient::receive_message, this);
+        receive_thread.detach(); // 分离线程
     }
 
     void receive_message()

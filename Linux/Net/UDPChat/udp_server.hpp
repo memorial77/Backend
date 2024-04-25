@@ -12,8 +12,18 @@
 #include <fstream>
 #include <strings.h>
 #include <vector>
+#include <queue>
 #include <algorithm>
+#include <thread>
+#include <mutex>
 #include <mysql/mysql.h>
+#include <condition_variable>
+
+struct MessageInfo
+{
+    std::string message;           // 消息内容
+    struct sockaddr_in senderAddr; // 发送者地址
+};
 
 class UdpServer
 {
@@ -70,12 +80,14 @@ public:
     // 启动服务器
     void start()
     {
+        start_sending(); // 启动发送线程
+
         char buf[1024];                 // 缓冲区
         struct sockaddr_in client_addr; // 客户端地址
         socklen_t len = sizeof(client_addr);
 
         // 3.接收数据
-        while (1)
+        while (true)
         {
             memset(buf, 0, sizeof(buf)); // 清空缓冲区
             // 从客户端接收数据，留出空间用于空终止符
@@ -109,6 +121,7 @@ public:
                     if (sendto(sockfd_, echo_msg.c_str(), echo_msg.length(), 0,
                                (struct sockaddr *)&client_addr, len) < 0)
                         std::cerr << "sendto 错误" << std::endl;
+                    continue;
                 }
             }
 
@@ -133,19 +146,8 @@ public:
             std::cout << "客户端 " << inet_ntoa(client_addr.sin_addr) << ":"
                       << ntohs(client_addr.sin_port) << " 发送消息: " << buf << std::endl;
 
-            // 4.发送数据
-            // 只有在线客户端才能发送和接收消息
-            if (isClientOnline(client_addr))
-            {
-                for (auto &addr : online_clients_)
-                {
-                    if (compareSockAddr(addr, client_addr))
-                        continue; // 不向发送者回送消息
-                    if (sendto(sockfd_, message_with_sender_info.c_str(), message_with_sender_info.length(), 0,
-                               (struct sockaddr *)&addr, len) < 0)
-                        std::cerr << "sendto 错误" << std::endl;
-                }
-            }
+            // 将消息添加到消息队列
+            add_message_to_queue(message_with_sender_info, client_addr);
         }
     }
 
@@ -155,14 +157,20 @@ private:
     int sockfd_;                                     // 套接字文件描述符
     MYSQL *conn;                                     // MySQL连接
     std::vector<struct sockaddr_in> online_clients_; // 在线客户端地址结构
+    std::queue<MessageInfo> message_queue_;          // 存储MessageInfo
+    std::mutex mtx_queue_;                           // 消息队列互斥锁
+    std::mutex mtx_online_clients_;                  // 在线客户端互斥锁
+    std::condition_variable cond_var_;               // 消息队列条件变量
 
     // 添加在线客户端
     void addOnlineClient(const struct sockaddr_in &client_addr)
     {
         auto it = std::find_if(online_clients_.begin(), online_clients_.end(), [&client_addr](const struct sockaddr_in &addr)
                                { return compareSockAddr(addr, client_addr); });
+        mtx_online_clients_.lock();
         if (it == online_clients_.end())
             online_clients_.push_back(client_addr);
+        mtx_online_clients_.unlock();
 
         std::string client_ip = inet_ntoa(client_addr.sin_addr);
         uint16_t client_port = ntohs(client_addr.sin_port);
@@ -189,7 +197,7 @@ private:
     void removeClient(const struct sockaddr_in &client_addr)
     {
         online_clients_.erase(std::remove_if(online_clients_.begin(), online_clients_.end(), [&client_addr](const struct sockaddr_in &addr)
-                                              { return compareSockAddr(addr, client_addr); }),
+                                             { return compareSockAddr(addr, client_addr); }),
                               online_clients_.end());
 
         // 将客户端IP地址转换为字符串
@@ -211,5 +219,45 @@ private:
     static bool compareSockAddr(const struct sockaddr_in &a, const struct sockaddr_in &b)
     {
         return a.sin_addr.s_addr == b.sin_addr.s_addr && a.sin_port == b.sin_port;
+    }
+
+    void start_sending()
+    {
+        std::thread send_thread(&UdpServer::send_message, this);
+        send_thread.detach(); // 分离线程
+    }
+
+    void send_message()
+    {
+        while (true)
+        {
+            std::unique_lock<std::mutex> lock(mtx_queue_);
+            cond_var_.wait(lock, [this]
+                           { return !message_queue_.empty(); });
+
+            // 获取消息和发送者信息
+            MessageInfo msgInfo = message_queue_.front();
+            message_queue_.pop();
+            lock.unlock(); // 解锁
+
+            for (auto &addr : online_clients_)
+            {
+                // 检查是否为消息的发送者，如果是，则不发送消息给自己
+                if (addr.sin_addr.s_addr == msgInfo.senderAddr.sin_addr.s_addr &&
+                    addr.sin_port == msgInfo.senderAddr.sin_port)
+                    continue; // 跳过发送步骤
+                if (sendto(sockfd_, msgInfo.message.c_str(), msgInfo.message.length(), 0,
+                           (struct sockaddr *)&addr, sizeof(addr)) < 0)
+                    std::cerr << "sendto 错误" << std::endl;
+            }
+        }
+    }
+
+    void add_message_to_queue(const std::string &message, const struct sockaddr_in &senderAddr)
+    {
+        std::unique_lock<std::mutex> lock(mtx_queue_);
+        message_queue_.push({message, senderAddr});
+        lock.unlock();
+        cond_var_.notify_one();
     }
 };
