@@ -7,12 +7,30 @@
 #include <mutex>
 #include <cstdint>
 #include <algorithm>
+#include <unistd.h>
 
 static const size_t MAX_BYTES = 256 * 1024; // 最大内存块大小
 static const size_t NUM_LISTS = 208;        // 链表数组大小
+static const size_t NUMS_PAGE = 129;        // PageCache中Span链表数量
+static const size_t PAGE_SHIFT = 13;        // 2^13 = 8KB
 
 // 返回当前内存块中存储的下一内存块的指针
 static void *&next_obj(void *obj) { return *((void **)obj); }
+
+// 系统调用申请内存
+static void *system_alloc(size_t pages)
+{
+    // 申请pages页内存
+    // pages << PAGE_SHIFT: 页数转换为字节数
+    void *ptr = mmap(nullptr, pages << PAGE_SHIFT, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    // 申请失败
+    if (ptr == MAP_FAILED)
+    {
+        std::cerr << "mmap error" << std::endl;
+        return nullptr;
+    }
+    return ptr;
+}
 
 // 自由链表类
 class FreeList
@@ -163,13 +181,28 @@ public:
         else
             return 2;
     }
+
+    // size: 内存块大小
+    static size_t num_move_page(size_t size)
+    {
+        size_t num = num_move_size(size);           // 线程缓存向中心缓存获取内存块数量
+        size_t fetch_size = num * size;             // 一次性获取的内存块大小
+        size_t page_num = fetch_size >> PAGE_SHIFT; // 页数
+
+        // 如果不是整数页则页数加1
+        if (fetch_size & (1 << PAGE_SHIFT - 1))
+            page_num++;
+
+        // 页数最小为1
+        return page_num;
+    }
 };
 
 class Span
 {
 public:
     Span()
-        : page_id_(0), num_(0), next_(nullptr),
+        : page_id_(0), page_nums_(0), next_(nullptr),
           prev_(nullptr), used_count_(0), free_list_(nullptr) {}
 
 public:
@@ -184,9 +217,9 @@ public:
 #error "Platform not supported"
 #endif
 
-    size_t num_; // 页内内存块数量
-    Span *next_; // 下一Span指针
-    Span *prev_; // 上一Span指针
+    size_t page_nums_; // 页数
+    Span *next_;       // 下一Span指针
+    Span *prev_;       // 上一Span指针
 
     size_t used_count_; // 已分配内存块数量
     void *free_list_;   // 内存切割后链接方便管理
@@ -203,7 +236,11 @@ public:
         head_->prev_ = head_;
     }
 
-    void insert(Span *pos, Span *span)
+    Span *begin() { return head_->next_; } // 返回第一个Span
+
+    Span *end() { return head_; }
+
+    void insert(Span *pos, Span *span) // 在pos位置插入span
     {
         assert(pos != nullptr);
         assert(span != nullptr);
@@ -216,7 +253,7 @@ public:
         pos->prev_ = span;
     }
 
-    void erase(Span *pos)
+    void erase(Span *pos) // 删除pos位置的Span
     {
         assert(pos != nullptr);
         assert(pos != head_); // 不允许删除头结点
@@ -225,7 +262,25 @@ public:
         pos->next_->prev_ = pos->prev_;
     }
 
-    std::mutex &get_mutex() { return mutex_; }
+    // 头插
+    void push_front(Span *span)
+    {
+        insert(head_->next_, span);
+    }
+
+    // 判断链表是否为空
+    bool empty() { return head_->next_ == head_; }
+
+    // 弹出第一个Span
+    Span *pop_front()
+    {
+        assert(!empty());
+        Span *span = head_->next_;
+        erase(span);
+        return span;
+    }
+
+    std::mutex &get_mutex() { return mutex_; } // 获取互斥锁
 
 private:
     Span *head_;       // 头指针
