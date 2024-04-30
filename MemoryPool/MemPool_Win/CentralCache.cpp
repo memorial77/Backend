@@ -1,84 +1,126 @@
 #include "CentralCache.h"
 #include "PageCache.h"
 
-// »ñÈ¡ÖĞĞÄ»º´æµÄÎ¨Ò»ÊµÀı
-CentralCache* CentralCache::get_instance()
+// è·å–ä¸­å¿ƒç¼“å­˜çš„å”¯ä¸€å®ä¾‹
+CentralCache *CentralCache::get_instance()
 {
-	static CentralCache* instance = new CentralCache();
+	static CentralCache *instance = new CentralCache();
 	return instance;
 }
 
-// ´ÓÖĞĞÄ»º´æ»ñÈ¡Ò»¶¨ÊıÁ¿µÄ¶ÔÏó¸øÏß³Ì»º´æ
-size_t CentralCache::fetch_range_objs(void*& start, void*& end, size_t batch_num, size_t align_size)
+// ä»ä¸­å¿ƒç¼“å­˜è·å–ä¸€å®šæ•°é‡çš„å¯¹è±¡ç»™çº¿ç¨‹ç¼“å­˜
+size_t CentralCache::fetch_range_objs(void *&start, void *&end, size_t batch_num, size_t align_size)
 {
-	// ¸ù¾İÄÚ´æ¿é´óĞ¡»ñÈ¡¶ÔÓ¦µÄSpanList
+	// æ ¹æ®å†…å­˜å—å¤§å°è·å–å¯¹åº”çš„SpanList
 	size_t index = SizeClass::index(align_size);
-	SpanList& span_list = central_cache_span_list_[index];
+	SpanList &span_list = central_cache_span_list_[index];
 
-	//span_list.get_mutex().lock(); // ¼ÓËø
+	span_list.get_mutex().lock(); // åŠ é”
 
-	Span* span = get_one_span(span_list, align_size);
-	assert(span != nullptr);		// ¸ÃSpanListÖĞÓĞSpan
-	assert(span->list_ != nullptr); // ¸ÃSpanµÄlist_¹ÒÖĞÓĞÄÚ´æ¿é
+	Span *span = get_one_span(span_list, align_size);
+	assert(span != nullptr);		// è¯¥SpanListä¸­æœ‰Span
+	assert(span->list_ != nullptr); // è¯¥Spançš„list_æŒ‚ä¸­æœ‰å†…å­˜å—
 
-	start = span->list_;	// ÆğÊ¼Î»ÖÃ
-	end = start;			// ½áÊøÎ»ÖÃ
-	size_t actual_num = 1;	// Êµ¼ÊÈ¡³öµÄÄÚ´æ¿é¸öÊı
-	// ´ÓspanÖĞÈ¡³öÄÚ´æ¿é
+	start = span->list_;   // èµ·å§‹ä½ç½®
+	end = start;		   // ç»“æŸä½ç½®
+	size_t actual_num = 1; // å®é™…å–å‡ºçš„å†…å­˜å—ä¸ªæ•°
+	// ä»spanä¸­å–å‡ºå†…å­˜å—
 	while (next_obj(end) != nullptr && actual_num < batch_num - 1)
 	{
 		end = next_obj(end);
 		++actual_num;
 	}
-	span->list_ = next_obj(end);	// ¸üĞÂspanµÄlist_Ö¸Ïò
-	next_obj(end) = nullptr;		// ½«È¡³öµÄÄÚ´æ¿é´ÓspanÖĞ¶Ï¿ª
+	span_list.get_mutex().lock();
 
-	//span_list.get_mutex().unlock(); // ½âËø
+	span->list_ = next_obj(end); // æ›´æ–°spançš„list_æŒ‡å‘
+	next_obj(end) = nullptr;	 // å°†å–å‡ºçš„å†…å­˜å—ä»spanä¸­æ–­å¼€
+
+	span_list.get_mutex().unlock(); // è§£é”
 
 	return actual_num;
 }
 
-// ´ÓSpanList»ñÈ¡Ò»¸ö·Ç¿ÕSpan
-Span* CentralCache::get_one_span(SpanList& span_list, size_t align_size)
+// ä»SpanListè·å–ä¸€ä¸ªéç©ºSpan
+Span *CentralCache::get_one_span(SpanList &span_list, size_t align_size)
 {
-	Span* begin = span_list.begin();
-	// ±éÀúSpanList ÕÒµ½Ò»¸ö·Ç¿ÕµÄSpan
+	span_list.get_mutex().unlock(); // è§£é”
+	Span *begin = span_list.begin();
+	// éå†SpanList æ‰¾åˆ°ä¸€ä¸ªéç©ºçš„Span
 	while (begin != span_list.end())
 	{
-		// Èç¹û¸ÃSpanÖĞÓĞÄÚ´æ¿é ÔòÖ±½Ó·µ»Ø
+		// å¦‚æœè¯¥Spanä¸­æœ‰å†…å­˜å— åˆ™ç›´æ¥è¿”å›
 		if (begin->list_ != nullptr)
 			return begin;
 		begin = begin->next_;
 	}
 
-	// Èç¹ûSpanListÖĞÃ»ÓĞ·Ç¿ÕµÄSpan Ôò´ÓPageCacheÖĞ»ñÈ¡Ò»¸öSpan
-	PageCache* page_cache = PageCache::get_instance(); // »ñÈ¡Ò³»º´æµÄÎ¨Ò»ÊµÀı
-	Span* span = page_cache->new_span(SizeClass::num_move_page(align_size)); // ´ÓÒ³»º´æ»ñÈ¡Ò»¸öSpan
+	// å¦‚æœSpanListä¸­æ²¡æœ‰éç©ºçš„Span åˆ™ä»PageCacheä¸­è·å–ä¸€ä¸ªSpan
+	PageCache *page_cache = PageCache::get_instance();						 // è·å–é¡µç¼“å­˜çš„å”¯ä¸€å®ä¾‹
+	Span *span = page_cache->new_span(SizeClass::num_move_page(align_size)); // ä»é¡µç¼“å­˜è·å–ä¸€ä¸ªSpan
 	assert(span != nullptr);
+	span->is_usud_ = true;		  // è®¾ç½®ä¸ºå·²ä½¿ç”¨
+	span->obj_size_ = align_size; // è®¾ç½®å†…å­˜å—å¤§å°
 
-	char* start = (char*)(span->page_id_ << PAGE_SHIFT);	// Ò³ºÅ×ª»»ÎªÆğÊ¼µØÖ·
-	size_t bytes = span->page_num_ << PAGE_SHIFT;			// ÄÚ´æ¿é×Ü´óĞ¡
-	char* end = start + bytes;								// ½áÊøµØÖ·
+	char *start = (char *)(span->page_id_ << PAGE_SHIFT); // é¡µå·è½¬æ¢ä¸ºèµ·å§‹åœ°å€
+	size_t bytes = span->page_num_ << PAGE_SHIFT;		  // å†…å­˜å—æ€»å¤§å°
+	char *end = start + bytes;							  // ç»“æŸåœ°å€
 
-	// ½«´ó¿éÄÚ´æÇĞ·Ö³ÉĞ¡¿éÄÚ´æ
-	size_t num = bytes / align_size;						// ÄÚ´æ¿é¸öÊı
-	char* cur = start;								// µ±Ç°Î»ÖÃ
-	char* next = cur + align_size;						// ÏÂÒ»¸öÎ»ÖÃ
+	// å°†å¤§å—å†…å­˜åˆ‡åˆ†æˆå°å—å†…å­˜
+	size_t num = bytes / align_size; // å†…å­˜å—ä¸ªæ•°
+	char *cur = start;				 // å½“å‰ä½ç½®
+	char *next = cur + align_size;	 // ä¸‹ä¸€ä¸ªä½ç½®
 	for (size_t i = 0; i < num - 1; ++i)
 	{
-		next_obj(cur) = next;	// ½«ÏÂÒ»¸öÎ»ÖÃ¹Òµ½µ±Ç°Î»ÖÃ
-		cur = next;				// ÒÆ¶¯µ±Ç°Î»ÖÃ
-		next = cur + align_size;		// ÒÆ¶¯ÏÂÒ»¸öÎ»ÖÃ
+		next_obj(cur) = next;	 // å°†ä¸‹ä¸€ä¸ªä½ç½®æŒ‚åˆ°å½“å‰ä½ç½®
+		cur = next;				 // ç§»åŠ¨å½“å‰ä½ç½®
+		next = cur + align_size; // ç§»åŠ¨ä¸‹ä¸€ä¸ªä½ç½®
 	}
-	next_obj(cur) = nullptr;		// ×îºóÒ»¸öÎ»ÖÃÖ¸Ïònullptr
+	next_obj(cur) = nullptr; // æœ€åä¸€ä¸ªä½ç½®æŒ‡å‘nullptr
 
-	span->list_ = start;	// spanµÄlist_Ö¸ÏòÄÚ´æ¿éÁ´±í
-	
-	// ½«span²åÈëµ½SpanListÖĞ
-	//span_list.get_mutex().lock();	// ¼ÓËø
-	span_list.push_front(span);		// ²åÈëµ½SpanListÖĞ
-	//span_list.get_mutex().unlock(); // ½âËø
+	span->list_ = start; // spançš„list_æŒ‡å‘å†…å­˜å—é“¾è¡¨
+
+	// å°†spanæ’å…¥åˆ°SpanListä¸­
+	span_list.get_mutex().lock();	// åŠ é”
+	span_list.push_front(span);		// æ’å…¥åˆ°SpanListä¸­
+	span_list.get_mutex().unlock(); // è§£é”
 
 	return span;
 }
 
+void CentralCache::release_list_to_spans(void *start, size_t size)
+{
+	size_t index = SizeClass::index(size); // æ ¹æ®å†…å­˜å—å¤§å°è·å–å¯¹åº”çš„SpanList
+	SpanList &span_list = central_cache_span_list_[index];
+
+	span_list.get_mutex().lock(); // åŠ é”
+
+	while (start)
+	{
+		void *next = next_obj(start);									   // è·å–ä¸‹ä¸€ä¸ªå†…å­˜å—
+		Span *span = PageCache::get_instance()->map_object_to_span(start); // é€šè¿‡page_idæ‰¾åˆ°å¯¹åº”çš„Span
+
+		// å°†å†…å­˜å—æ’å…¥åˆ°Spançš„list_ä¸­
+		next_obj(start) = span->list_;
+		span->list_ = start;
+		span->use_count_--; // Spançš„ä½¿ç”¨å†…å­˜å—ä¸ªæ•°å‡1
+
+		if (span->use_count_ == 0)
+		{
+			// å¦‚æœSpançš„ä½¿ç”¨å†…å­˜å—ä¸ªæ•°ä¸º0 åˆ™å°†Spanä»SpanListä¸­åˆ é™¤
+			span_list.erase(span);
+			span->list_ = nullptr; // æ¸…ç©ºSpançš„list_
+			span->next_ = nullptr; // æ¸…ç©ºSpançš„next_
+			span->prev_ = nullptr; // æ¸…ç©ºSpançš„prev_
+
+			// span_list.get_mutex().unlock(); // è§£é”
+
+			// å°†Spanæ’å…¥åˆ°PageCacheçš„SpanListä¸­
+			PageCache::get_instance()->release_span_to_page_cache(span);
+
+			// span_list.get_mutex().lock(); // åŠ é”
+		}
+		start = next; // ç§»åŠ¨åˆ°ä¸‹ä¸€ä¸ªå†…å­˜å—
+	}
+
+	span_list.get_mutex().unlock(); // è§£é”
+}

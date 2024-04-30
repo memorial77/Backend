@@ -1,22 +1,32 @@
 #pragma once
 
 #include "Common.h"
+#include "ObjectPool.h"
 
 class PageCache
 {
 public:
-	// »ñÈ¡Ò³»º´æµÄÎ¨Ò»ÊµÀı
+	// è·å–é¡µç¼“å­˜çš„å”¯ä¸€å®ä¾‹
 	static PageCache* get_instance();
 
-	// »ñÈ¡Ò»¸öKÒ³µÄSpan
+	// è·å–ä¸€ä¸ªKé¡µçš„Span
 	Span* new_span(size_t k);
 
-private:
-	// °´ÕÕÒ³ÊıÓ³Éäµ½¶ÔÓ¦µÄSpanListÏÂ±ê Ò³ÊıÎ»ÓÚ[1, 128]
-	SpanList page_cache_span_list_[PAGE_LIST_SIZE];		// Ò³»º´æÖĞSpanListÊı×é
-	std::mutex page_cache_mutex_;						// Ò³»º´æµÄ»¥³âËø
+	Span* map_object_to_span(void* start);
 
-	PageCache() {}										// ¹¹Ôìº¯ÊıË½ÓĞ
-	PageCache(const PageCache&) = delete;				// ½ûÖ¹¿½±´¹¹Ôì
-	PageCache& operator=(const PageCache&) = delete;	// ½ûÖ¹¸³Öµ¿½±´
+	void release_span_to_page_cache(Span* span);
+
+	std::mutex& get_mutex() { return page_cache_mutex_; }	// è·å–é¡µç¼“å­˜çš„äº’æ–¥é”
+
+private:
+	// æŒ‰ç…§é¡µæ•°æ˜ å°„åˆ°å¯¹åº”çš„SpanListä¸‹æ ‡ é¡µæ•°ä½äº[1, 128]
+	SpanList page_cache_span_list_[PAGE_LIST_SIZE];				// é¡µç¼“å­˜ä¸­SpanListæ•°ç»„
+	std::mutex page_cache_mutex_;								// é¡µç¼“å­˜çš„äº’æ–¥é”
+	std::unordered_map<page_id_type, Span*> id_span_map_;		// é€šè¿‡page_idæ‰¾åˆ°å¯¹åº”çš„Span
+	ObjectPool<Span> span_ptr_pool_;							// Spanå¯¹è±¡æ± 
+
+	PageCache() {}										// æ„é€ å‡½æ•°ç§æœ‰
+	PageCache(const PageCache&) = delete;				// ç¦æ­¢æ‹·è´æ„é€ 
+	PageCache& operator=(const PageCache&) = delete;	// ç¦æ­¢èµ‹å€¼æ‹·è´
+
 };

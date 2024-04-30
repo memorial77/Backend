@@ -2,76 +2,99 @@
 #include "CentralCache.h"
 #include <algorithm>
 
-_declspec(thread) ThreadCache* tls_thread_cache = nullptr;
+//_declspec(thread) ThreadCache* tls_thread_cache = nullptr;
+thread_local ThreadCache* tls_thread_cache = nullptr;
 
-// ´ÓÏß³Ì»º´æÖĞ·ÖÅäÄÚ´æ
+
+// ä»çº¿ç¨‹ç¼“å­˜ä¸­åˆ†é…å†…å­˜
 void* ThreadCache::alloc(size_t size)
 {
-	assert(size <= MAX_SIZES);						// ÉêÇëµÄÄÚ´æ´óĞ¡²»ÄÜ³¬¹ıMAX_SIZES = 256KB  
-	size_t align_size = SizeClass::round_up(size);	// ÄÚ´æ¶ÔÆë
-	size_t index = SizeClass::index(align_size);	// ¸ù¾İÄÚ´æ´óĞ¡»ñÈ¡Ïß³Ì»º´æÖĞ×ÔÓÉÁ´±íÊı×éµÄÏÂ±ê
+	assert(size <= MAX_SIZES);						// ç”³è¯·çš„å†…å­˜å¤§å°ä¸èƒ½è¶…è¿‡MAX_SIZES = 256KB  
+	size_t align_size = SizeClass::round_up(size);	// å†…å­˜å¯¹é½
+	size_t index = SizeClass::index(align_size);	// æ ¹æ®å†…å­˜å¤§å°è·å–çº¿ç¨‹ç¼“å­˜ä¸­è‡ªç”±é“¾è¡¨æ•°ç»„çš„ä¸‹æ ‡
 
 	if (thread_cache_free_list_[index].empty())
 	{
-		// Èç¹ûÏß³Ì»º´æÖĞ¶ÔÓ¦µÄ×ÔÓÉÁ´±íÎª¿ÕÔò´ÓÖĞĞÄ»º´æ¶ÔÓ¦µÄSpanList»ñÈ¡ÄÚ´æ¿é
+		// å¦‚æœçº¿ç¨‹ç¼“å­˜ä¸­å¯¹åº”çš„è‡ªç”±é“¾è¡¨ä¸ºç©ºåˆ™ä»ä¸­å¿ƒç¼“å­˜å¯¹åº”çš„SpanListè·å–å†…å­˜å—
 		return fetch_from_central_cache(index, align_size);
 	}
 	else
 	{
-		// Ïß³Ì»º´æÖĞ¶ÔÓ¦µÄ×ÔÓÉÁ´±íÖĞÓĞÄÚ´æ¿é£¬Ö±½ÓÈ¡³ö
+		// çº¿ç¨‹ç¼“å­˜ä¸­å¯¹åº”çš„è‡ªç”±é“¾è¡¨ä¸­æœ‰å†…å­˜å—ï¼Œç›´æ¥å–å‡º
 		return thread_cache_free_list_[index].pop();
 	}
 }
 
-// ´ÓÖĞĞÄ»º´æ¶ÔÓ¦µÄSpanList»ñÈ¡ÄÚ´æ¿é
+// ä»ä¸­å¿ƒç¼“å­˜å¯¹åº”çš„SpanListè·å–å†…å­˜å—
 void* ThreadCache::fetch_from_central_cache(size_t index, size_t align_size)
 {
-	// Âı¿ªÊ¼²ßÂÔ£¬Ã¿´Î´ÓÖĞĞÄ»º´æ»ñÈ¡µÄÄÚ´æ¿éÊıÁ¿Öğ½¥Ôö¼Ó
+	// æ…¢å¼€å§‹ç­–ç•¥ï¼Œæ¯æ¬¡ä»ä¸­å¿ƒç¼“å­˜è·å–çš„å†…å­˜å—æ•°é‡é€æ¸å¢åŠ 
 	size_t batch_size = SizeClass::num_move_size(align_size) > thread_cache_free_list_[index].get_count() ?
 		thread_cache_free_list_[index].get_count() : SizeClass::num_move_size(align_size);
 
 	if (batch_size == thread_cache_free_list_[index].get_count())
-		thread_cache_free_list_[index].get_count()++;	// Öğ½¥Ôö¼Ó»ñÈ¡µÄÄÚ´æ¿éÊıÁ¿
-	else
-		thread_cache_free_list_[index].get_count() = 1;	// ÖØÖÃÎª1
+		thread_cache_free_list_[index].get_count()++;	// é€æ¸å¢åŠ è·å–çš„å†…å­˜å—æ•°é‡
+	//else
+	//	thread_cache_free_list_[index].get_count() = 1;	// é‡ç½®ä¸º1
 
-	// »ñÈ¡ÖĞĞÄ»º´æµÄÎ¨Ò»ÊµÀı
+	// è·å–ä¸­å¿ƒç¼“å­˜çš„å”¯ä¸€å®ä¾‹
 	CentralCache* central_cache = CentralCache::get_instance();
 	assert(central_cache != nullptr);
 
-	// ´ÓÖĞĞÄ»º´æ»ñÈ¡Ò»¶¨ÊıÁ¿µÄ¶ÔÏó¸øÏß³Ì»º´æ
-	void* start = nullptr;	// »ñÈ¡µÄÄÚ´æ¿éµÄÆğÊ¼µØÖ·
-	void* end = nullptr;	// »ñÈ¡µÄÄÚ´æ¿éµÄ½áÊøµØÖ·
+	// ä»ä¸­å¿ƒç¼“å­˜è·å–ä¸€å®šæ•°é‡çš„å¯¹è±¡ç»™çº¿ç¨‹ç¼“å­˜
+	void* start = nullptr;	// è·å–çš„å†…å­˜å—çš„èµ·å§‹åœ°å€
+	void* end = nullptr;	// è·å–çš„å†…å­˜å—çš„ç»“æŸåœ°å€
 
-	// »ñÈ¡µÄÊµ¼ÊÄÚ´æ¿éµÄ¸öÊı
+	// è·å–çš„å®é™…å†…å­˜å—çš„ä¸ªæ•°
 	size_t actual_size = central_cache->fetch_range_objs(start, end, batch_size, align_size);
-	assert(actual_size > 0); // »ñÈ¡µÄÄÚ´æ¿é¸öÊı±ØĞë´óÓÚ0
-
-	// debug
-	std::cout << "fetch_from_central_cache: " << actual_size << std::endl;
+	assert(actual_size > 0); // è·å–çš„å†…å­˜å—ä¸ªæ•°å¿…é¡»å¤§äº0
+	//std::cout << "fetch_from_central_cache size = " << actual_size << std::endl;
 
 	if (actual_size == 1)
 	{
-		// Èç¹û»ñÈ¡µÄÄÚ´æ¿é¸öÊıÎª1£¬ÔòÖ±½Ó·µ»Ø
+		// å¦‚æœè·å–çš„å†…å­˜å—ä¸ªæ•°ä¸º1ï¼Œåˆ™ç›´æ¥è¿”å›
 		assert(start == end);
 		return start;
 	}
 	else
 	{
-		// Èç¹û»ñÈ¡µÄÄÚ´æ¿é¸öÊı´óÓÚ1£¬Ôò½«»ñÈ¡µÄÄÚ´æ¿é²åÈëµ½Ïß³Ì»º´æµÄ×ÔÓÉÁ´±íÖĞ
+		// å¦‚æœè·å–çš„å†…å­˜å—ä¸ªæ•°å¤§äº1ï¼Œåˆ™å°†è·å–çš„å†…å­˜å—æ’å…¥åˆ°çº¿ç¨‹ç¼“å­˜çš„è‡ªç”±é“¾è¡¨ä¸­
 		thread_cache_free_list_[index].push_range(start, end, actual_size);
 		return thread_cache_free_list_[index].pop();
 	}
 }
 
 
-// ½«ÄÚ´æ¿éÊÍ·Åµ½Ïß³Ì»º´æ
+// å°†å†…å­˜å—é‡Šæ”¾åˆ°çº¿ç¨‹ç¼“å­˜
 void ThreadCache::dealloc(void* ptr, size_t size)
 {
 	assert(ptr != nullptr);
 	assert(size <= MAX_SIZES);
 
-	// ½«ÒªÊÍ·ÅµÄÄÚ´æ¿é²åÈëµ½Ïß³Ì»º´æµÄ×ÔÓÉÁ´±íÖĞ
+	// å°†è¦é‡Šæ”¾çš„å†…å­˜å—æ’å…¥åˆ°çº¿ç¨‹ç¼“å­˜çš„è‡ªç”±é“¾è¡¨ä¸­
 	size_t index = SizeClass::index(size);
 	thread_cache_free_list_[index].push(ptr);
+
+	// å¦‚æœè‡ªç”±é“¾è¡¨ä¸­çš„å†…å­˜å—ä¸ªæ•°å¤§äºä¸€å®šé˜ˆå€¼ï¼Œåˆ™å°†å†…å­˜å—é‡Šæ”¾åˆ°ä¸­å¿ƒç¼“å­˜
+	if (thread_cache_free_list_[index].size() >= thread_cache_free_list_[index].get_count())
+	{
+		list_too_long_free(index, size);
+	}
+}
+
+// é‡Šæ”¾çº¿ç¨‹ç¼“å­˜ä¸­çš„å†…å­˜å—
+void ThreadCache::list_too_long_free(size_t index, size_t size)
+{
+	// å›æ”¶åˆ°ä¸­å¿ƒç¼“å­˜
+	void* start = nullptr;
+	void* end = nullptr;
+
+	size_t pop_size = thread_cache_free_list_[index].get_count();	// è·å–çš„å†…å­˜å—ä¸ªæ•°
+	thread_cache_free_list_[index].pop_range(start, end, pop_size); // ä»è‡ªç”±é“¾è¡¨ä¸­å–å‡ºpop_sizeä¸ªå†…å­˜å—
+
+	// è·å–ä¸­å¿ƒç¼“å­˜çš„å”¯ä¸€å®ä¾‹
+	CentralCache* central_cache = CentralCache::get_instance();
+	assert(central_cache != nullptr);
+
+	central_cache->release_list_to_spans(start, size);
 }

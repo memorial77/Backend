@@ -6,6 +6,7 @@
 #include <mutex>
 #include <stdlib.h>	
 #include <algorithm>
+#include <unordered_map>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -14,7 +15,7 @@
 #include <unistd.h>
 #endif
 
-// ´¦Àí¿çÆ½Ì¨Ò³ºÅÀàĞÍ
+// å¤„ç†è·¨å¹³å°é¡µå·ç±»å‹
 #ifdef _WIN32
 	// Windows
 #ifdef _WIN64
@@ -35,11 +36,11 @@ typedef uint32_t page_id_type;
 #endif
 #endif
 
-static const size_t FREE_LIST_SIZE = 208;		// Ïß³Ì»º´æÖĞ×ÔÓÉÁ´±íµÄ¸öÊı
-static const size_t SPAN_LIST_SIZE = 208;		// ÖĞĞÄ»º´æÖĞSpanListÊı×éµÄ¸öÊı
-static const size_t PAGE_LIST_SIZE = 129;		// Ò³»º´æÖĞSpanListÊı×éµÄ¸öÊı
-static const size_t MAX_SIZES = 256 * 1024;		// ÉêÇëµÄÄÚ´æ´óĞ¡²»ÄÜ³¬¹ı256KB
-static const size_t PAGE_SIZE = 8 * 1024;		// Ò³´óĞ¡8KB
+static const size_t FREE_LIST_SIZE = 208;		// çº¿ç¨‹ç¼“å­˜ä¸­è‡ªç”±é“¾è¡¨çš„ä¸ªæ•°
+static const size_t SPAN_LIST_SIZE = 208;		// ä¸­å¿ƒç¼“å­˜ä¸­SpanListæ•°ç»„çš„ä¸ªæ•°
+static const size_t PAGE_LIST_SIZE = 129;		// é¡µç¼“å­˜ä¸­SpanListæ•°ç»„çš„ä¸ªæ•°
+static const size_t MAX_SIZES = 256 * 1024;		// ç”³è¯·çš„å†…å­˜å¤§å°ä¸èƒ½è¶…è¿‡256KB
+static const size_t PAGE_SIZE = 8 * 1024;		// é¡µå¤§å°8KB
 static const size_t PAGE_SHIFT = 13;			// 2^13 = 8KB
 
 
@@ -48,23 +49,23 @@ static void*& next_obj(void* ptr)
 	return *((void**)ptr);
 }
 
-// ÏµÍ³µ÷ÓÃ»ñÈ¡ÄÚ´æ ÒÔÒ³Îªµ¥Î»
+// ç³»ç»Ÿè°ƒç”¨è·å–å†…å­˜ ä»¥é¡µä¸ºå•ä½
 static void* system_alloc(size_t pages)
 {
-	size_t size = pages * PAGE_SIZE; // ¼ÆËãĞèÒªµÄÄÚ´æ´óĞ¡
+	size_t size = pages * PAGE_SIZE; // è®¡ç®—éœ€è¦çš„å†…å­˜å¤§å°
 
 #ifdef _WIN32
 	// Windows
 	void* ptr = VirtualAlloc(NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 	if (ptr == NULL) {
-		// ´¦Àí´íÎó
+		// å¤„ç†é”™è¯¯
 		return nullptr;
 	}
 #else
 	// Linux
 	void* ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	if (ptr == MAP_FAILED) {
-		// ´¦Àí´íÎó
+		// å¤„ç†é”™è¯¯
 		return nullptr;
 	}
 #endif
@@ -72,16 +73,28 @@ static void* system_alloc(size_t pages)
 	return ptr;
 }
 
+// ç³»ç»Ÿè°ƒç”¨é‡Šæ”¾å†…å­˜
+static void system_dealloc(void* ptr)
+{
+	#ifdef _WIN32
+	// Windows
+	VirtualFree(ptr, 0, MEM_RELEASE);
+	#else
+	// Linux
+	munmap(ptr, 0);
+	#endif
+}
+
 
 class FreeList
 {
 public:
 
-	FreeList() : list_(nullptr) {} // ³õÊ¼»¯Á´±íÎª¿Õ
+	FreeList() : list_(nullptr), size_(0), get_count_(1) {} // æ„é€ å‡½æ•°
 
-	~FreeList() {} // Îö¹¹º¯Êı
+	~FreeList() {} // ææ„å‡½æ•°
 
-	// ½«ÄÚ´æ¿é²åÈëµ½Á´±íÍ·²¿
+	// å°†å†…å­˜å—æ’å…¥åˆ°é“¾è¡¨å¤´éƒ¨
 	void push(void* obj)
 	{
 		if (list_ == nullptr)
@@ -94,30 +107,51 @@ public:
 			next_obj(obj) = list_;
 			list_ = obj;
 		}
+		++size_;
 	}
 
+	// å°†[start, end)åŒºé—´çš„å†…å­˜å—æ’å…¥åˆ°è‡ªç”±é“¾è¡¨ä¸­
 	void push_range(void* start, void* end, size_t n)
 	{
 		assert(start != nullptr);
 		assert(end != nullptr);
 		assert(n > 0);
 
-		// ½«[start, end)Çø¼äµÄÄÚ´æ¿é²åÈëµ½×ÔÓÉÁ´±íÖĞ
+		// å°†[start, end)åŒºé—´çš„å†…å­˜å—æ’å…¥åˆ°è‡ªç”±é“¾è¡¨ä¸­
 		next_obj(end) = list_;
 		list_ = start;
+		size_ += n;
 	}
 
-	// ´ÓÁ´±íÍ·²¿È¡³öÄÚ´æ¿é
+	// ä»é“¾è¡¨å¤´éƒ¨å–å‡ºå†…å­˜å—
 	void* pop()
 	{
-		// ×ÔÓÉÁ´±íÎª¿Õ²»ÄÜ¼ÌĞø·ÖÅäÄÚ´æ¿é
+		// è‡ªç”±é“¾è¡¨ä¸ºç©ºä¸èƒ½ç»§ç»­åˆ†é…å†…å­˜å—
 		assert(list_ != nullptr);
 		void* obj = list_;
 		list_ = next_obj(list_);
+		--size_;
 		return obj;
 	}
 
-	// ÅĞ¶Ï×ÔÓÉÁ´±íÊÇ·ñÎª¿Õ
+	// ä»è‡ªç”±é“¾è¡¨ä¸­å–å‡ºnä¸ªå†…å­˜å—
+	void pop_range(void*& start, void*& end, size_t n)
+	{
+		assert(list_ != nullptr);
+
+		start = list_;
+		end = start;
+		for (size_t i = 0; i < n - 1; ++i)
+		{
+			end = next_obj(end);
+		}
+
+		list_ = next_obj(end);		// æ›´æ–°list_æŒ‡å‘
+		next_obj(end) = nullptr;	// å°†å–å‡ºçš„å†…å­˜å—ä»é“¾è¡¨ä¸­æ–­å¼€
+		size_ -= n;					// æ›´æ–°è‡ªç”±é“¾è¡¨ä¸­å†…å­˜å—çš„ä¸ªæ•°
+	}
+
+	// åˆ¤æ–­è‡ªç”±é“¾è¡¨æ˜¯å¦ä¸ºç©º
 	bool empty() const
 	{
 		return list_ == nullptr;
@@ -128,33 +162,42 @@ public:
 		return get_count_;
 	}
 
+	size_t size() const
+	{
+		return size_;
+	}
+
 private:
-	void* list_;			// ×ÔÓÉÁ´±íÍ·Ö¸Õë
-	size_t get_count_ = 1; // ´ÓÖĞĞÄ»º´æ»ñÈ¡µÄÄÚ´æ¿é¸öÊı
+	void* list_;			// è‡ªç”±é“¾è¡¨å¤´æŒ‡é’ˆ
+	size_t size_;		// è‡ªç”±é“¾è¡¨ä¸­å†…å­˜å—çš„å¤§å°
+	size_t get_count_; // ä»ä¸­å¿ƒç¼“å­˜è·å–çš„å†…å­˜å—ä¸ªæ•°
 };
 
 
-// ¹ÜÀíÒÔÒ³Îªµ¥Î»µÄ´óÄÚ´æ¿é
+// ç®¡ç†ä»¥é¡µä¸ºå•ä½çš„å¤§å†…å­˜å—
 struct Span
 {
 
 
-	page_id_type page_id_ = 0;	// ´ó¿éÄÚ´æÆğÊ¼Ò³Ò³ºÅ
-	size_t page_num_ = 0;		// ´ó¿éÄÚ´æ×Ü¹²Ò³Êı
+	page_id_type page_id_ = 0;	// å¤§å—å†…å­˜èµ·å§‹é¡µé¡µå·
+	size_t page_num_ = 0;		// å¤§å—å†…å­˜æ€»å…±é¡µæ•°
 
-	// Ë«ÏòÁ´±í
-	Span* next_ = nullptr;		// Ö¸ÏòÏÂÒ»¸öSpan
-	Span* prev_ = nullptr;		// Ö¸ÏòÉÏÒ»¸öSpan
+	// åŒå‘é“¾è¡¨
+	Span* next_ = nullptr;		// æŒ‡å‘ä¸‹ä¸€ä¸ªSpan
+	Span* prev_ = nullptr;		// æŒ‡å‘ä¸Šä¸€ä¸ªSpan
 
-	void* list_ = nullptr;		// ±£´æÇĞ¸îºóµÄĞ¡¿éÄÚ´æ¿éµÄÁ´±í
-	size_t use_count_ = 0;		// ÇĞ¸îºÃµÄĞ¡¿éÄÚ´æ·ÖÅä¸øThreadCacheµÄ¸öÊı
+	void* list_ = nullptr;		// ä¿å­˜åˆ‡å‰²åçš„å°å—å†…å­˜å—çš„é“¾è¡¨
+	size_t use_count_ = 0;		// åˆ‡å‰²å¥½çš„å°å—å†…å­˜åˆ†é…ç»™ThreadCacheçš„ä¸ªæ•°
+
+	bool is_usud_ = false;		// æ˜¯å¦è¢«ä½¿ç”¨
+	size_t obj_size_ = 0;		// å†…å­˜å—å¤§å°
 };
 
-// ´øÍ·Ë«ÏòspanÁ´±í
+// å¸¦å¤´åŒå‘spané“¾è¡¨
 class SpanList
 {
 public:
-	// ¹¹ÔìÍ·½Úµã
+	// æ„é€ å¤´èŠ‚ç‚¹
 	SpanList() : head_(nullptr)
 	{
 		head_ = new Span;
@@ -172,7 +215,7 @@ public:
 		return head_;
 	}
 
-	// ÔÚposÎ»ÖÃ²åÈëspan½Úµã
+	// åœ¨posä½ç½®æ’å…¥spanèŠ‚ç‚¹
 	void insert(Span* pos, Span* span)
 	{
 		assert(pos);
@@ -189,7 +232,7 @@ public:
 		insert(begin(), span);
 	}
 
-	// É¾³ıposÎ»ÖÃµÄspan½Úµã
+	// åˆ é™¤posä½ç½®çš„spanèŠ‚ç‚¹
 	void erase(Span* pos)
 	{
 		assert(pos);
@@ -218,37 +261,37 @@ public:
 	}
 
 private:
-	Span* head_;		// Í·Ö¸Õë
-	std::mutex mtx_;	// Í°µÄ»¥³âËø
+	Span* head_;		// å¤´æŒ‡é’ˆ
+	std::mutex mtx_;	// æ¡¶çš„äº’æ–¥é”
 };
 
 
-// ÄÚ´æ¿éÏà¹Ø¹¦ÄÜÀà
+// å†…å­˜å—ç›¸å…³åŠŸèƒ½ç±»
 class SizeClass
 {
 public:
-	// ÕûÌå¿ØÖÆÔÚ×î¶à10%×óÓÒµÄÄÚËéÆ¬ÀË·Ñ
-	// [1,128]              8byte¶ÔÆë           freelist[0,16)
-	// [128+1,1024]         16byte¶ÔÆë          freelist[16,72)
-	// [1024+1,8*1024]      128byte¶ÔÆë         freelist[72,128)
-	// [8*1024+1,64*1024]   1024byte¶ÔÆë        freelist[128,184)
-	// [64*1024+1,256*1024] 8*1024byte¶ÔÆë      freelist[184,208)
+	// æ•´ä½“æ§åˆ¶åœ¨æœ€å¤š10%å·¦å³çš„å†…ç¢ç‰‡æµªè´¹
+	// [1,128]              8byteå¯¹é½           freelist[0,16)
+	// [128+1,1024]         16byteå¯¹é½          freelist[16,72)
+	// [1024+1,8*1024]      128byteå¯¹é½         freelist[72,128)
+	// [8*1024+1,64*1024]   1024byteå¯¹é½        freelist[128,184)
+	// [64*1024+1,256*1024] 8*1024byteå¯¹é½      freelist[184,208)
 
-	// ÄÚ´æ¿é·ÖÇø½çÏŞ
-	static const size_t SMALL_SIZE = 128;             // ¶ÔÓ¦×ÔÓÉÁ´±íÏÂ±ê0-15 ¶ÔÆë´óĞ¡8
-	static const size_t MEDIUM_SIZE = 1024;           // ¶ÔÓ¦×ÔÓÉÁ´±íÏÂ±ê16-71 ¶ÔÆë´óĞ¡16
-	static const size_t LARGE_SIZE = 8 * 1024;        // ¶ÔÓ¦×ÔÓÉÁ´±íÏÂ±ê72-127 ¶ÔÆë´óĞ¡128
-	static const size_t EXTRA_LARGE_SIZE = 64 * 1024; // ¶ÔÓ¦×ÔÓÉÁ´±íÏÂ±ê128-183 ¶ÔÆë´óĞ¡1024
-	static const size_t HUGE_SIZE = 256 * 1024;       // ¶ÔÓ¦×ÔÓÉÁ´±íÏÂ±ê184-207 ¶ÔÆë´óĞ¡8*1024
+	// å†…å­˜å—åˆ†åŒºç•Œé™
+	static const size_t SMALL_SIZE = 128;             // å¯¹åº”è‡ªç”±é“¾è¡¨ä¸‹æ ‡0-15 å¯¹é½å¤§å°8
+	static const size_t MEDIUM_SIZE = 1024;           // å¯¹åº”è‡ªç”±é“¾è¡¨ä¸‹æ ‡16-71 å¯¹é½å¤§å°16
+	static const size_t LARGE_SIZE = 8 * 1024;        // å¯¹åº”è‡ªç”±é“¾è¡¨ä¸‹æ ‡72-127 å¯¹é½å¤§å°128
+	static const size_t EXTRA_LARGE_SIZE = 64 * 1024; // å¯¹åº”è‡ªç”±é“¾è¡¨ä¸‹æ ‡128-183 å¯¹é½å¤§å°1024
+	static const size_t HUGE_SIZE = 256 * 1024;       // å¯¹åº”è‡ªç”±é“¾è¡¨ä¸‹æ ‡184-207 å¯¹é½å¤§å°8*1024
 
-	// ¶ÔÆë´óĞ¡µÄ³£Á¿
+	// å¯¹é½å¤§å°çš„å¸¸é‡
 	static const size_t SMALL_ALIGN = 8;
 	static const size_t MEDIUM_ALIGN = 16;
 	static const size_t LARGE_ALIGN = 128;
 	static const size_t EXTRA_LARGE_ALIGN = 1024;
 	static const size_t HUGE_ALIGN = 8 * 1024;
 
-	// ¼ÆËãÄÚ´æ¿é´óĞ¡¶ÔÓ¦µÄ×ÔÓÉÁ´±íÏÂ±ê
+	// è®¡ç®—å†…å­˜å—å¤§å°å¯¹åº”çš„è‡ªç”±é“¾è¡¨ä¸‹æ ‡
 	static size_t index(size_t size)
 	{
 		if (size <= SMALL_SIZE)
@@ -263,13 +306,13 @@ public:
 			return (size - EXTRA_LARGE_SIZE + HUGE_ALIGN - 1) / HUGE_ALIGN + 184 - 1;
 	}
 
-	// ÄÚ´æ¶ÔÆë¸¨Öúº¯Êı
+	// å†…å­˜å¯¹é½è¾…åŠ©å‡½æ•°
 	static size_t align_up(size_t size, size_t align)
 	{
 		return (size + align - 1) & ~(align - 1);
 	}
 
-	// ÄÚ´æ¶ÔÆëº¯Êı
+	// å†…å­˜å¯¹é½å‡½æ•°
 	static size_t round_up(size_t size)
 	{
 		if (size <= SMALL_SIZE)
@@ -284,13 +327,11 @@ public:
 			return align_up(size, HUGE_ALIGN);
 		else
 		{
-			// TODO: ³¬¹ıHUGE_SIZEµÄÄÚ´æ¿éÔİÊ±²»´¦Àí
-			assert(false);
-			return 0;
+			return align_up(size, static_cast<size_t>(1) << PAGE_SHIFT);
 		}
 	}
 
-	// ¼ÆËãÒ»´Î´ÓÖĞĞÄ»º´æ»ñÈ¡ÄÚ´æ¿éµÄÊıÁ¿
+	// è®¡ç®—ä¸€æ¬¡ä»ä¸­å¿ƒç¼“å­˜è·å–å†…å­˜å—çš„æ•°é‡
 	static size_t num_move_size(size_t size)
 	{
 		if (size <= SMALL_SIZE)
@@ -305,24 +346,24 @@ public:
 			return 1;
 		else
 		{
-			// TODO: ³¬¹ıHUGE_SIZEµÄÄÚ´æ¿éÔİÊ±²»´¦Àí
+			// TODO: è¶…è¿‡HUGE_SIZEçš„å†…å­˜å—æš‚æ—¶ä¸å¤„ç†
 			return 0;
 		}
 	}
 
-	// ¼ÆËãÒ»´Î´ÓÒ³»º´æ»ñÈ¡Ò³µÄÊıÁ¿
+	// è®¡ç®—ä¸€æ¬¡ä»é¡µç¼“å­˜è·å–é¡µçš„æ•°é‡
 	static size_t num_move_page(size_t align_size)
 	{
 		size_t batch_num = num_move_size(align_size);
 		size_t batch_size = batch_num * align_size;
 
-		// ¼ÆËãÒ³Êı
+		// è®¡ç®—é¡µæ•°
 		size_t page_nums = batch_size >> PAGE_SHIFT;
-		// Èç¹û²»ÊÇÕûÊıÒ³ÊıÔò¼Ó1Ò³
+		// å¦‚æœä¸æ˜¯æ•´æ•°é¡µæ•°åˆ™åŠ 1é¡µ
 		if (batch_size & (PAGE_SIZE - 1))
 			++page_nums;
 
-		//// Ò³Êı²»ÄÜ³¬¹ı128Ò³
+		//// é¡µæ•°ä¸èƒ½è¶…è¿‡128é¡µ
 		//if (page_nums > 128)
 		//	page_nums = 128;
 

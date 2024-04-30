@@ -1,24 +1,28 @@
 #pragma once
 
 #include "Common.h"
+#include "ObjectPool.h"
 
-// ÖĞĞÄ»º´æ
+// ä¸­å¿ƒç¼“å­˜
 class CentralCache
 {
 public:
-	// »ñÈ¡ÖĞĞÄ»º´æµÄÎ¨Ò»ÊµÀı ¶öººÄ£Ê½
+	// è·å–ä¸­å¿ƒç¼“å­˜çš„å”¯ä¸€å®ä¾‹ é¥¿æ±‰æ¨¡å¼
 	static CentralCache* get_instance();
 
-	// ´ÓÖĞĞÄ»º´æ»ñÈ¡Ò»¶¨ÊıÁ¿µÄ¶ÔÏó¸øÏß³Ì»º´æ
+	// ä»ä¸­å¿ƒç¼“å­˜è·å–ä¸€å®šæ•°é‡çš„å¯¹è±¡ç»™çº¿ç¨‹ç¼“å­˜
 	size_t fetch_range_objs(void*& start, void*& end, size_t batch_num, size_t align_size);
 
-	// ´ÓSpanList»ñÈ¡Ò»¸ö·Ç¿ÕSpan
+	// ä»SpanListè·å–ä¸€ä¸ªéç©ºSpan
 	Span* get_one_span(SpanList& span_list, size_t align_size);
 
-private:
-	SpanList central_cache_span_list_[SPAN_LIST_SIZE];		// ÖĞĞÄ»º´æÖĞSpanListÊı×é
+	// ä»çº¿ç¨‹ç¼“å­˜é‡Šæ”¾å†…å­˜å—åˆ°ä¸­å¿ƒç¼“å­˜
+	void release_list_to_spans(void* start, size_t size);
 
-	CentralCache() {}										// ¹¹Ôìº¯ÊıË½ÓĞ
-	CentralCache(const CentralCache&) = delete;				// ½ûÖ¹¿½±´¹¹Ôì
-	CentralCache& operator=(const CentralCache&) = delete;	// ½ûÖ¹¸³Öµ¿½±´
+private:
+	SpanList central_cache_span_list_[SPAN_LIST_SIZE];		// ä¸­å¿ƒç¼“å­˜ä¸­SpanListæ•°ç»„
+
+	CentralCache() {}										// æ„é€ å‡½æ•°ç§æœ‰
+	CentralCache(const CentralCache&) = delete;				// ç¦æ­¢æ‹·è´æ„é€ 
+	CentralCache& operator=(const CentralCache&) = delete;	// ç¦æ­¢èµ‹å€¼æ‹·è´
 };

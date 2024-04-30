@@ -5,19 +5,21 @@
 class ThreadCache
 {
 public:
-	// ´ÓÏß³Ì»º´æÖĞ·ÖÅäÄÚ´æ
+	// ä»çº¿ç¨‹ç¼“å­˜ä¸­åˆ†é…å†…å­˜
 	void* alloc(size_t size);
 
-	// ½«ÄÚ´æ¿éÊÍ·Åµ½Ïß³Ì»º´æ
+	// å°†å†…å­˜å—é‡Šæ”¾åˆ°çº¿ç¨‹ç¼“å­˜
 	void dealloc(void* ptr, size_t size);
 
-	// ´ÓÖĞĞÄ»º´æ»ñÈ¡ÄÚ´æ¿é
+	// ä»ä¸­å¿ƒç¼“å­˜è·å–å†…å­˜å—
 	void* fetch_from_central_cache(size_t index, size_t align_size);
 
+	// é‡Šæ”¾çº¿ç¨‹ç¼“å­˜ä¸­çš„å†…å­˜å—
+	void list_too_long_free(size_t index, size_t size);
+
 private:
-	FreeList thread_cache_free_list_[FREE_LIST_SIZE]; // ×ÔÓÉÁ´±íÊı×é-¹şÏ£Í°
+	FreeList thread_cache_free_list_[FREE_LIST_SIZE]; // è‡ªç”±é“¾è¡¨æ•°ç»„-å“ˆå¸Œæ¡¶
 };
 
-extern _declspec(thread) ThreadCache* tls_thread_cache; // Ïß³Ì»º´æÖ¸Õë
-
+extern thread_local ThreadCache* tls_thread_cache;
 

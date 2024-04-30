@@ -3,8 +3,8 @@
 #include "Common.h"
 #include "ThreadCache.h"
 
-// ´ÓÏß³Ì»º´æÖĞ·ÖÅäÄÚ´æ
+// ä»çº¿ç¨‹ç¼“å­˜ä¸­åˆ†é…å†…å­˜
 void* con_current_alloc(size_t size);
 
-// ½«ÄÚ´æ¿éÊÍ·Åµ½Ïß³Ì»º´æ
-void con_current_dealloc(void* ptr, size_t size);
+// å°†å†…å­˜å—é‡Šæ”¾åˆ°çº¿ç¨‹ç¼“å­˜
+void con_current_dealloc(void* ptr);
