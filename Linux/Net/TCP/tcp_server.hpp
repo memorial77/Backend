@@ -103,13 +103,13 @@ public:
             int conn_fd = accept_connection();
             if (conn_fd == -1) // 建立连接失败
                 continue;
-
+            
             // 当前连接数
             log_msg(INFO, "current connections: " + std::to_string(current_connections.load()));
 
             // // 创建新线程处理客户端连接(多线程处理多个客户端连接)
             // std::thread client_thread([this, conn_fd]()
-            //                           { this->handle_client(conn_fd);
+            //                           { this->handle_client_no_pool(conn_fd);
             //                             this->connection_closed(); }); // 使用lambda表达式
             // client_thread.detach(); // 不等待线程结束
 
@@ -183,7 +183,7 @@ private:
             {
                 log_msg(INFO, "connection closed by peer");
                 close(conn_fd); // 防止文件描述符泄漏
-                return;
+                break;
             }
             buf[recv_len] = '\0';
 
@@ -191,9 +191,7 @@ private:
 
             // 数据加工：将接收到的数据转换为大写
             for (int i = 0; i < recv_len; ++i)
-            {
                 buf[i] = toupper(buf[i]);
-            }
 
             // 7.发送数据
             // ssize_t send_len = write(conn_fd, buf, strlen(buf));
@@ -230,5 +228,50 @@ private:
         }
         log_msg(INFO, "accept a new connection, conn_fd = " + std::to_string(conn_fd)); // 接受连接成功
         return conn_fd;                                                                 // 返回连接的文件描述符
+    }
+
+    // 客户端线程处理函数(不使用线程池)
+    void handler_client_no_pool(int conn_fd)
+    {
+        while (true)
+        {
+            // 6.接收数据
+            char buf[1024];
+            bzero(buf, sizeof(buf)); // 清空缓冲区
+            // ssize_t recv_len = read(conn_fd, buf, sizeof(buf) - 1);
+            ssize_t recv_len = recv(conn_fd, buf, sizeof(buf) - 1, 0);
+            if (recv_len == -1)
+            {
+                log_msg(ERROR, "recv error: " + std::string(strerror(errno)));
+                close(conn_fd);
+                return;
+            }
+            else if (recv_len == 0) // 客户端关闭连接
+            {
+                log_msg(INFO, "connection closed by peer");
+                close(conn_fd); // 防止文件描述符泄漏
+                break;
+            }
+            buf[recv_len] = '\0';
+
+            log_msg(INFO, "recv data: " + std::string(buf)); // 接收数据成功
+
+            // 数据加工：将接收到的数据转换为大写
+            for (int i = 0; i < recv_len; ++i)
+                buf[i] = toupper(buf[i]);
+
+            // 7.发送数据
+            // ssize_t send_len = write(conn_fd, buf, strlen(buf));
+            ssize_t send_len = send(conn_fd, buf, strlen(buf), 0);
+            if (send_len == -1)
+            {
+                log_msg(ERROR, "send error: " + std::string(strerror(errno)));
+                close(conn_fd);
+                return;
+            }
+        }
+
+        // 7.关闭连接
+        close(conn_fd);
     }
 };

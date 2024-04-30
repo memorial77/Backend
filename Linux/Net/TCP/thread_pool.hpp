@@ -61,7 +61,8 @@ public:
         {
             ThreadData<T> *td = new ThreadData<T>(this, thread->threadname()); // 创建线程数据
             thread->start(handlerTask, td);                                    // 启动线程
-            // log_msg(INFO, thread->threadname() + " start ...");
+
+            log_msg(INFO, "Thread started, thread name:" + thread->threadname());
         }
     }
     // 向任务队列中添加一个任务

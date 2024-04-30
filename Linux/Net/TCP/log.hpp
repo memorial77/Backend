@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <chrono>
 #include <iomanip>
@@ -12,7 +13,15 @@
 #define ERROR 4
 #define FATAL 5
 
+// 定义一个静态文件流对象
+static std::ofstream logFile("log.txt", std::ios::app);
+
 void log_msg(int level, const std::string& msg) {
+    if (!logFile.is_open()) {
+        std::cerr << "无法打开日志文件！" << std::endl;
+        return;
+    }
+
     // 获取当前时间
     auto now = std::chrono::system_clock::now();
     auto time = std::chrono::system_clock::to_time_t(now);
@@ -24,22 +33,22 @@ void log_msg(int level, const std::string& msg) {
 
     switch(level) {
         case DEBUG:
-            std::cout << timeStr << "[DEBUG] " << msg << std::endl;
+            logFile << timeStr << "[DEBUG] " << msg << std::endl;
             break;
         case INFO:
-            std::cout << timeStr << "[INFO]  " << msg << std::endl;
+            logFile << timeStr << "[INFO]  " << msg << std::endl;
             break;
         case WARN:
-            std::cout << timeStr << "[WARN]  " << msg << std::endl;
+            logFile << timeStr << "[WARN]  " << msg << std::endl;
             break;
         case ERROR:
-            std::cerr << timeStr << "[ERROR] " << msg << std::endl;
+            logFile << timeStr << "[ERROR] " << msg << std::endl;
             break;
         case FATAL:
-            std::cerr << timeStr << "[FATAL] " << msg << std::endl;
+            logFile << timeStr << "[FATAL] " << msg << std::endl;
             break;
         default:
-            std::cerr << timeStr << "[UNKNOWN] " << msg << std::endl;
+            logFile << timeStr << "[UNKNOWN] " << msg << std::endl;
             break;
     }
-}
+} 
