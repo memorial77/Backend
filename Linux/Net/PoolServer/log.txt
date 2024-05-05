@@ -1,0 +1,285 @@
+[2024-05-05 20:45:27] [INFO]  create socket success! sockfd: 4
+[2024-05-05 20:45:27] [INFO]  set socket option success!
+[2024-05-05 20:45:27] [INFO]  bind socket success! IP: 0.0.0.0ï¼Œport: 8888
+[2024-05-05 20:45:27] [INFO]  listen socket success! backlog: 128
+[2024-05-05 20:45:29] [INFO]  have event ready!
+[2024-05-05 20:45:29] [INFO]  accept socket success! client_ip: 127.0.0.1ï¼Œclient_port: 46842
+[2024-05-05 20:45:33] [INFO]  have event ready!
+[2024-05-05 20:45:33] [INFO]  recv msg:1
+
+[2024-05-05 20:45:35] [INFO]  have event ready!
+[2024-05-05 20:45:35] [INFO]  recv msg:2
+
+[2024-05-05 20:45:36] [INFO]  have event ready!
+[2024-05-05 20:45:36] [INFO]  recv msg:3
+
+[2024-05-05 20:45:37] [INFO]  have event ready!
+[2024-05-05 20:45:37] [INFO]  recv msg:4
+
+[2024-05-05 20:45:37] [INFO]  have event ready!
+[2024-05-05 20:45:37] [INFO]  recv msg:2
+
+[2024-05-05 20:45:38] [INFO]  have event ready!
+[2024-05-05 20:45:38] [INFO]  recv msg:1
+
+[2024-05-05 20:45:39] [INFO]  have event ready!
+[2024-05-05 20:45:39] [INFO]  recv msg:4
+
+[2024-05-05 20:45:40] [INFO]  have event ready!
+[2024-05-05 20:45:40] [INFO]  recv msg:2
+
+[2024-05-05 20:45:41] [INFO]  have event ready!
+[2024-05-05 20:45:41] [INFO]  recv msg:6
+
+[2024-05-05 20:45:41] [INFO]  have event ready!
+[2024-05-05 20:45:41] [INFO]  recv msg:4
+
+[2024-05-05 20:45:42] [INFO]  have event ready!
+[2024-05-05 20:45:42] [INFO]  recv msg:2
+
+[2024-05-05 20:45:42] [INFO]  have event ready!
+[2024-05-05 20:45:42] [INFO]  recv msg:3
+
+[2024-05-05 20:45:43] [INFO]  have event ready!
+[2024-05-05 20:45:43] [INFO]  recv msg:1
+
+[2024-05-05 20:45:44] [INFO]  have event ready!
+[2024-05-05 20:45:44] [INFO]  recv msg:3
+
+[2024-05-05 20:45:46] [INFO]  have event ready!
+[2024-05-05 20:45:46] [INFO]  recv msg:ÿôÿý
+[2024-05-05 20:45:46] [INFO]  have event ready!
+[2024-05-05 20:45:46] [INFO]  recv msg:ÿû
+[2024-05-05 20:46:21] [INFO]  create socket success! sockfd: 4
+[2024-05-05 20:46:21] [INFO]  set socket option success!
+[2024-05-05 20:46:21] [INFO]  bind socket success! IP: 0.0.0.0ï¼Œport: 8888
+[2024-05-05 20:46:21] [INFO]  listen socket success! backlog: 128
+[2024-05-05 20:46:24] [INFO]  have event ready!
+[2024-05-05 20:46:24] [INFO]  accept socket success! client_ip: 127.0.0.1ï¼Œclient_port: 46894
+[2024-05-05 20:46:25] [INFO]  have event ready!
+[2024-05-05 20:46:25] [INFO]  recv msg:1
+
+[2024-05-05 20:46:26] [INFO]  have event ready!
+[2024-05-05 20:46:26] [INFO]  recv msg:2
+
+[2024-05-05 20:46:27] [INFO]  have event ready!
+[2024-05-05 20:46:27] [INFO]  recv msg:3
+
+[2024-05-05 20:46:28] [INFO]  have event ready!
+[2024-05-05 20:46:28] [INFO]  recv msg:1
+
+[2024-05-05 20:46:29] [INFO]  have event ready!
+[2024-05-05 20:46:29] [INFO]  recv msg:4
+
+[2024-05-05 20:47:31] [INFO]  create socket success! sockfd: 4
+[2024-05-05 20:47:31] [INFO]  set socket option success!
+[2024-05-05 20:47:31] [INFO]  bind socket success! IP: 0.0.0.0ï¼Œport: 8888
+[2024-05-05 20:47:31] [INFO]  listen socket success! backlog: 128
+[2024-05-05 20:47:34] [INFO]  have event ready!
+[2024-05-05 20:47:34] [INFO]  accept socket success! client_ip: 127.0.0.1ï¼Œclient_port: 46972
+[2024-05-05 20:47:36] [INFO]  have event ready!
+[2024-05-05 20:47:36] [INFO]  recv success! data: 1
+
+[2024-05-05 20:47:37] [INFO]  have event ready!
+[2024-05-05 20:47:37] [INFO]  recv success! data: 2
+
+[2024-05-05 20:47:37] [INFO]  have event ready!
+[2024-05-05 20:47:37] [INFO]  recv success! data: 3
+
+[2024-05-05 20:47:38] [INFO]  have event ready!
+[2024-05-05 20:47:38] [INFO]  recv success! data: 1
+
+[2024-05-05 20:47:51] [INFO]  have event ready!
+[2024-05-05 20:47:51] [INFO]  accept socket success! client_ip: 127.0.0.1ï¼Œclient_port: 46992
+[2024-05-05 20:47:54] [INFO]  have event ready!
+[2024-05-05 20:47:54] [INFO]  recv success! data: 1
+
+[2024-05-05 20:47:54] [INFO]  have event ready!
+[2024-05-05 20:47:54] [INFO]  recv success! data: 2
+
+[2024-05-05 20:47:55] [INFO]  have event ready!
+[2024-05-05 20:47:55] [INFO]  recv success! data: 3
+
+[2024-05-05 20:47:55] [INFO]  have event ready!
+[2024-05-05 20:47:55] [INFO]  recv success! data: 
+
+[2024-05-05 20:47:56] [INFO]  have event ready!
+[2024-05-05 20:47:56] [INFO]  recv success! data: 4
+
+[2024-05-05 20:47:56] [INFO]  have event ready!
+[2024-05-05 20:47:56] [INFO]  recv success! data: 4
+
+[2024-05-05 20:47:56] [INFO]  have event ready!
+[2024-05-05 20:47:56] [INFO]  recv success! data: 1
+
+[2024-05-05 20:47:58] [INFO]  have event ready!
+[2024-05-05 20:47:58] [INFO]  recv success! data: 1
+
+[2024-05-05 20:47:59] [INFO]  have event ready!
+[2024-05-05 20:47:59] [INFO]  recv success! data: 2
+
+[2024-05-05 20:47:59] [INFO]  have event ready!
+[2024-05-05 20:47:59] [INFO]  recv success! data: 4
+
+[2024-05-05 20:48:00] [INFO]  have event ready!
+[2024-05-05 20:48:00] [INFO]  recv success! data: 5
+
+[2024-05-05 20:48:00] [INFO]  have event ready!
+[2024-05-05 20:48:00] [INFO]  recv success! data: 6
+
+[2024-05-05 20:48:01] [INFO]  have event ready!
+[2024-05-05 20:48:01] [INFO]  recv success! data: 4
+
+[2024-05-05 20:48:01] [INFO]  have event ready!
+[2024-05-05 20:48:01] [INFO]  recv success! data: 7
+
+[2024-05-05 20:48:01] [INFO]  have event ready!
+[2024-05-05 20:48:01] [INFO]  recv success! data: 1
+
+[2024-05-05 20:48:02] [INFO]  have event ready!
+[2024-05-05 20:48:02] [INFO]  recv success! data: 2
+
+[2024-05-05 20:48:02] [INFO]  have event ready!
+[2024-05-05 20:48:02] [INFO]  recv success! data: 3
+
+[2024-05-05 20:48:03] [INFO]  have event ready!
+[2024-05-05 20:48:03] [INFO]  recv success! data: 4
+
+[2024-05-05 20:48:03] [INFO]  have event ready!
+[2024-05-05 20:48:03] [INFO]  recv success! data: 20
+
+[2024-05-05 20:49:44] [INFO]  create socket success! sockfd: 4
+[2024-05-05 20:49:44] [INFO]  set socket option success!
+[2024-05-05 20:49:44] [INFO]  bind socket success! IP: 0.0.0.0ï¼Œport: 8888
+[2024-05-05 20:49:44] [INFO]  listen socket success! backlog: 128
+[2024-05-05 20:50:16] [INFO]  create socket success! sockfd: 4
+[2024-05-05 20:50:16] [INFO]  set socket option success!
+[2024-05-05 20:50:16] [INFO]  bind socket success! IP: 0.0.0.0ï¼Œport: 8888
+[2024-05-05 20:50:16] [INFO]  listen socket success! backlog: 128
+[2024-05-05 20:50:16] [INFO]  poll timeout
+[2024-05-05 20:50:16] [INFO]  poll timeout
+[2024-05-05 20:50:16] [INFO]  poll timeout
+[2024-05-05 20:50:16] [INFO]  poll timeout
+[2024-05-05 20:50:16] [INFO]  poll timeout
+[2024-05-05 20:50:17] [INFO]  poll timeout
+[2024-05-05 20:50:17] [INFO]  poll timeout
+[2024-05-05 20:50:17] [INFO]  poll timeout
+[2024-05-05 20:50:17] [INFO]  poll timeout
+[2024-05-05 20:50:17] [INFO]  poll timeout
+[2024-05-05 20:50:17] [INFO]  poll timeout
+[2024-05-05 20:50:17] [INFO]  poll timeout
+[2024-05-05 20:50:17] [INFO]  poll timeout
+[2024-05-05 20:50:17] [INFO]  poll timeout
+[2024-05-05 20:50:17] [INFO]  poll timeout
+[2024-05-05 20:50:18] [INFO]  poll timeout
+[2024-05-05 20:50:18] [INFO]  poll timeout
+[2024-05-05 20:50:18] [INFO]  poll timeout
+[2024-05-05 20:50:18] [INFO]  poll timeout
+[2024-05-05 20:50:18] [INFO]  poll timeout
+[2024-05-05 20:50:18] [INFO]  poll timeout
+[2024-05-05 20:50:18] [INFO]  poll timeout
+[2024-05-05 20:50:18] [INFO]  poll timeout
+[2024-05-05 20:50:18] [INFO]  poll timeout
+[2024-05-05 20:50:18] [INFO]  poll timeout
+[2024-05-05 20:50:19] [INFO]  poll timeout
+[2024-05-05 20:50:19] [INFO]  poll timeout
+[2024-05-05 20:50:19] [INFO]  poll timeout
+[2024-05-05 20:50:19] [INFO]  poll timeout
+[2024-05-05 20:50:19] [INFO]  poll timeout
+[2024-05-05 20:50:19] [INFO]  poll timeout
+[2024-05-05 20:50:19] [INFO]  poll timeout
+[2024-05-05 20:50:19] [INFO]  poll timeout
+[2024-05-05 20:50:19] [INFO]  poll timeout
+[2024-05-05 20:50:19] [INFO]  poll timeout
+[2024-05-05 20:50:20] [INFO]  poll timeout
+[2024-05-05 20:50:20] [INFO]  poll timeout
+[2024-05-05 20:50:20] [INFO]  poll timeout
+[2024-05-05 20:50:20] [INFO]  poll timeout
+[2024-05-05 20:50:20] [INFO]  poll timeout
+[2024-05-05 20:50:20] [INFO]  poll timeout
+[2024-05-05 20:50:20] [INFO]  have event ready!
+[2024-05-05 20:50:20] [INFO]  accept socket success! client_ip: 127.0.0.1ï¼Œclient_port: 47148
+[2024-05-05 20:50:20] [INFO]  poll timeout
+[2024-05-05 20:50:20] [INFO]  poll timeout
+[2024-05-05 20:50:20] [INFO]  poll timeout
+[2024-05-05 20:50:21] [INFO]  poll timeout
+[2024-05-05 20:50:21] [INFO]  poll timeout
+[2024-05-05 20:50:21] [INFO]  poll timeout
+[2024-05-05 20:50:21] [INFO]  poll timeout
+[2024-05-05 20:50:21] [INFO]  poll timeout
+[2024-05-05 20:50:21] [INFO]  poll timeout
+[2024-05-05 20:50:21] [INFO]  poll timeout
+[2024-05-05 20:50:21] [INFO]  poll timeout
+[2024-05-05 20:50:21] [INFO]  poll timeout
+[2024-05-05 20:50:21] [INFO]  poll timeout
+[2024-05-05 20:50:22] [INFO]  poll timeout
+[2024-05-05 20:50:22] [INFO]  poll timeout
+[2024-05-05 20:50:22] [INFO]  poll timeout
+[2024-05-05 20:50:22] [INFO]  poll timeout
+[2024-05-05 20:50:22] [INFO]  poll timeout
+[2024-05-05 20:50:22] [INFO]  poll timeout
+[2024-05-05 20:50:22] [INFO]  poll timeout
+[2024-05-05 20:50:22] [INFO]  poll timeout
+[2024-05-05 20:50:22] [INFO]  poll timeout
+[2024-05-05 20:50:22] [INFO]  poll timeout
+[2024-05-05 20:50:23] [INFO]  poll timeout
+[2024-05-05 20:50:23] [INFO]  have event ready!
+[2024-05-05 20:50:23] [INFO]  recv success! data: 1
+
+[2024-05-05 20:50:23] [INFO]  poll timeout
+[2024-05-05 20:50:23] [INFO]  poll timeout
+[2024-05-05 20:50:23] [INFO]  poll timeout
+[2024-05-05 20:50:23] [INFO]  poll timeout
+[2024-05-05 20:50:23] [INFO]  have event ready!
+[2024-05-05 20:50:23] [INFO]  recv success! data: 2
+
+[2024-05-05 20:50:23] [INFO]  poll timeout
+[2024-05-05 20:50:23] [INFO]  poll timeout
+[2024-05-05 20:50:23] [INFO]  poll timeout
+[2024-05-05 20:50:24] [INFO]  poll timeout
+[2024-05-05 20:50:24] [INFO]  have event ready!
+[2024-05-05 20:50:24] [INFO]  recv success! data: 3
+
+[2024-05-05 20:50:24] [INFO]  poll timeout
+[2024-05-05 20:50:24] [INFO]  poll timeout
+[2024-05-05 20:50:24] [INFO]  poll timeout
+[2024-05-05 20:50:24] [INFO]  have event ready!
+[2024-05-05 20:50:24] [INFO]  recv success! data: 1
+
+[2024-05-05 20:50:24] [INFO]  poll timeout
+[2024-05-05 20:50:24] [INFO]  poll timeout
+[2024-05-05 20:50:24] [INFO]  have event ready!
+[2024-05-05 20:50:24] [INFO]  recv success! data: 1
+
+[2024-05-05 20:50:24] [INFO]  poll timeout
+[2024-05-05 20:50:24] [INFO]  poll timeout
+[2024-05-05 20:50:24] [INFO]  poll timeout
+[2024-05-05 20:50:24] [INFO]  have event ready!
+[2024-05-05 20:50:24] [INFO]  recv success! data: 1
+
+[2024-05-05 20:50:25] [INFO]  poll timeout
+[2024-05-05 20:50:25] [INFO]  poll timeout
+[2024-05-05 20:50:25] [INFO]  have event ready!
+[2024-05-05 20:50:25] [INFO]  recv success! data: 1
+
+[2024-05-05 20:50:25] [INFO]  poll timeout
+[2024-05-05 20:50:25] [INFO]  poll timeout
+[2024-05-05 20:50:25] [INFO]  have event ready!
+[2024-05-05 20:50:25] [INFO]  recv success! data: 1
+
+[2024-05-05 20:50:25] [INFO]  poll timeout
+[2024-05-05 20:50:25] [INFO]  poll timeout
+[2024-05-05 20:50:25] [INFO]  poll timeout
+[2024-05-05 20:50:25] [INFO]  poll timeout
+[2024-05-05 20:50:25] [INFO]  poll timeout
+[2024-05-05 20:50:26] [INFO]  poll timeout
+[2024-05-05 20:50:26] [INFO]  poll timeout
+[2024-05-05 20:50:26] [INFO]  poll timeout
+[2024-05-05 20:50:26] [INFO]  poll timeout
+[2024-05-05 20:50:26] [INFO]  poll timeout
+[2024-05-05 20:50:26] [INFO]  poll timeout
+[2024-05-05 20:50:26] [INFO]  poll timeout
+[2024-05-05 20:50:26] [INFO]  poll timeout
+[2024-05-05 20:50:26] [INFO]  poll timeout
+[2024-05-05 20:50:26] [INFO]  poll timeout
+[2024-05-05 20:50:27] [INFO]  poll timeout
